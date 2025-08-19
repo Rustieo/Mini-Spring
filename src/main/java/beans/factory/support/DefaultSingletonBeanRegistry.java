@@ -1,5 +1,7 @@
 package beans.factory.support;
 
+import beans.factory.config.SingletonBeanRegistry;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

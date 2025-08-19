@@ -112,4 +112,8 @@ public class BeanDefinition {
     public boolean isSingleton() {
         return SCOPE_SINGLETON.equals(scope);
     }
+
+    public ArgumentValues getArgumentValues() {
+        return constructorArgumentValues;
+    }
 }

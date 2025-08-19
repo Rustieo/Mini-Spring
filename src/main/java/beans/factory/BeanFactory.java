@@ -1,5 +1,7 @@
 package beans.factory;
 
+import beans.BeansException;
+
 public interface BeanFactory {
     Object getBean(String beanName) throws BeansException;
     void registerBean(String beanName, Object obj);

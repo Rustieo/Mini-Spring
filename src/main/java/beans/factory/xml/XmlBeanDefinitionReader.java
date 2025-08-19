@@ -2,18 +2,19 @@ package beans.factory.xml;
 
 import beans.Resource;
 import beans.factory.config.*;
-import beans.factory.support.SimpleBeanFactory;
+import beans.factory.support.AbstractBeanFactory;
 import org.dom4j.Element;
 
 import java.util.ArrayList;
 import java.util.List;
 public class XmlBeanDefinitionReader {
-    SimpleBeanFactory bf;
+    AbstractBeanFactory bf;
 
-    public XmlBeanDefinitionReader(SimpleBeanFactory bf) {
+    public XmlBeanDefinitionReader(AbstractBeanFactory bf) {
         this.bf = bf;
     }
-    public void loadBeanDefinitions(Resource res) {
+    public List<BeanDefinition> loadBeanDefinitions(Resource res) {
+        List<BeanDefinition> nonLazyInitBeans = new ArrayList<>();
         while (res.hasNext()) {
             Element element = (Element)res.next();
             String beanID=element.attributeValue("id");
@@ -59,8 +60,9 @@ public class XmlBeanDefinitionReader {
             beanDefinition.setDependsOn(refArray);
             //end of handle properties
 
-            this.bf.registerBeanDefinition(beanID,beanDefinition);
+            this.bf.registerBeanDefinition(beanID,beanDefinition,nonLazyInitBeans);
         }
+        return nonLazyInitBeans;
     }
 
 

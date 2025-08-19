@@ -1,7 +1,9 @@
 package beans.factory.support;
 
+import beans.BeansException;
 import beans.factory.BeanFactory;
 import beans.factory.config.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -10,25 +12,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-
-
-public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
+@Slf4j
+public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory, BeanDefinitionRegistry {
     private Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
     private List<String> beanDefinitionNames = new ArrayList<>();
     private Map<Class,String[]> allBeanNamesByType = new ConcurrentHashMap<>();
-    public SimpleBeanFactory() {
-    }
 
     //getBean，容器的核心方法
-    public Object getBean(String beanName) {
+    public Object getBean(String beanName)  {
         //先尝试直接拿bean实例
         Object singleton = this.getSingleton(beanName);
         //如果此时还没有这个bean的实例，则获取它的定义来创建实例
         if (singleton == null) {
             singleton= this.getEarlySingleton(beanName);
             if (singleton == null) {
-                singleton = this.createBean(beanDefinitionMap.get(beanName));
+                BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+                singleton = this.createBean(beanDefinition);
                 //新注册这个bean实例
                 this.registerSingleton(beanName, singleton);
             }
@@ -39,11 +38,16 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     private Object createBean(BeanDefinition beanDefinition) {
         Class<?> clz = null;
         Object obj = null;
-        obj=createEarlyBean(beanDefinition);
-        //把early对象放入缓存
-        registerEarlySingleton(beanDefinition.getId(), obj);
-        // 处理属性
-        handleProperties(beanDefinition, clz, obj);
+        try {
+            clz = Class.forName(beanDefinition.getClassName());
+            obj=createEarlyBean(beanDefinition);
+            //把early对象放入缓存
+            registerEarlySingleton(beanDefinition.getId(), obj);
+            // 处理属性
+            populateBean(beanDefinition, clz, obj);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         return obj;
     }
     public Object createEarlyBean(BeanDefinition beanDefinition){
@@ -85,7 +89,16 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
             } else { //如果没有参数，直接创建实例
                 obj = clz.newInstance();
             }
-        } catch (Exception e) {
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
         //把bean的class:beanName[]放入缓存
         if(allBeanNamesByType.containsKey(clz)){
@@ -95,12 +108,26 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         }
         return obj;
     }
-    private void populateBean(){
+    private void populateBean(BeanDefinition beanDefinition, Class<?> clz, Object obj){
 
+        try {
+            // 执行xml注入
+            handleProperties(beanDefinition, clz, obj);
+            // step 1: postProcessBeforeInitialization
+            applyBeanPostProcessorsBeforeInitialization(obj, beanDefinition.getId());
+            // step 2: 调用setter方法
+            if (beanDefinition.getInitMethodName() != null && !beanDefinition.equals("")) {
+                invokeInitMethod(beanDefinition, obj);
+            }
+            // step 3: Autowired注入
+            applyBeanPostProcessorsAfterInitialization(obj,beanDefinition.getId());
+        } catch (BeansException e) {
+            throw new RuntimeException(e);
+        }
     }
     private void handleProperties(BeanDefinition bd, Class<?> clz, Object obj) {
         // 处理属性
-        System.out.println("handle properties for bean : " + bd.getId());
+        log.info("handle properties for bean : " + bd.getId());
         PropertyValues propertyValues = bd.getPropertyValues();
         //如果有属性
         if (!propertyValues.isEmpty()) {
@@ -132,7 +159,7 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
                         e.printStackTrace();
                     }
 
-                        //再次调用getBean创建ref的bean实例
+                    //再次调用getBean创建ref的bean实例
                     paramValues[0] = getBean((String) pValue);
 
                 }
@@ -155,10 +182,27 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         }
     }
 
+    private void invokeInitMethod(BeanDefinition beanDefinition, Object obj) {
+        Class<?> clz = beanDefinition.getClass();
+        Method method = null;
+        try {
+            method = clz.getMethod(beanDefinition.getInitMethodName());
+            method.invoke(obj);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
 
+    }
     @Override
     public boolean containsBean(String name) {
         return beanDefinitionMap.containsKey(name);
+    }
+    public String[] getBeanNamesByType(Class<?> type) {
+        return allBeanNamesByType.get(type);
     }
     public void preInstantiateSingletons(List<BeanDefinition>nonLazyInitBeans){
         for (BeanDefinition bd : nonLazyInitBeans) {
@@ -166,8 +210,6 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         }
     }
 
-
-    ///////////////////////
     public void registerBeanDefinition(String name, BeanDefinition beanDefinition,List<BeanDefinition>nonLazyInitBeans) {
         this.beanDefinitionMap.put(name, beanDefinition);
         this.beanDefinitionNames.add(name);
@@ -198,7 +240,6 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     public void registerBean(String name, Object obj) {
         this.registerSingleton(name, obj);
     }
-
-
-
+    abstract public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName) throws BeansException;
+    abstract public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) throws BeansException;
 }
