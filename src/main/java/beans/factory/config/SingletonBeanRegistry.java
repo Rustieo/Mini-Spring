@@ -5,4 +5,7 @@ public interface SingletonBeanRegistry {
     Object getSingleton(String beanName);
     boolean containsSingleton(String beanName);
     String[] getSingletonNames();
+//    String[] getDependentBeans(String beanName);
+//    String[] getDependenciesForBean(String beanName);
+//    void registerDependentBean(String beanName, String dependentBeanName);
 }

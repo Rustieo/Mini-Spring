@@ -5,21 +5,21 @@ import beans.BeansException;
 import beans.Resource;
 import beans.factory.ApplicationEvent;
 import beans.factory.config.BeanDefinition;
-import beans.factory.support.AutowireCapableBeanFactory;
+import beans.factory.support.DefaultListableBeanFactory;
 
 import java.util.List;
 
 public class ClassPathXmlApplicationContext {
-    AutowireCapableBeanFactory beanFactory;
+    //TODO 这里接口的声明感觉有点随便,可以挑个更合适的
+    DefaultListableBeanFactory beanFactory=new DefaultListableBeanFactory();
     public ClassPathXmlApplicationContext(String fileName) {
         this(fileName, true);
     }
     public ClassPathXmlApplicationContext(String fileName, boolean isRefresh) {
         Resource resource = new ClassPathXmlResource(fileName);
-        beanFactory=new AutowireCapableBeanFactory();
         XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
-        List<BeanDefinition>nonLazyInitBeans=reader.loadBeanDefinitions(resource);
-
+        reader.loadBeanDefinitions(resource);
+        List<BeanDefinition>nonLazyInitBeans=beanFactory.getNonLazyInitBeans();
         if (isRefresh) {
             try {
                 this.refresh(nonLazyInitBeans);
@@ -31,12 +31,12 @@ public class ClassPathXmlApplicationContext {
     /*TODO:完成完整的refresh逻辑,可以参考https://www.cnblogs.com/hellowhy/p/15618896.html或者
        https://blog.csdn.net/qq_29799655/article/details/105398225*/
     public void refresh(List<BeanDefinition>nonLazyInitBeans) throws BeansException {
-        registerBeanPostProcessors(this.beanFactory);
+        registerBeanPostProcessors(new AutowiredAnnotationBeanPostProcessor());
         this.beanFactory.preInstantiateSingletons(nonLazyInitBeans);
     }
     //context再对外提供一个getBean，底下就是调用的BeanFactory对应的方法
-    private void registerBeanPostProcessors(AutowireCapableBeanFactory beanFactory) {
-        beanFactory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
+    private void registerBeanPostProcessors(AutowiredAnnotationBeanPostProcessor postProcessor) {
+        beanFactory.addBeanPostProcessor(postProcessor);
     }
 
     //TODO

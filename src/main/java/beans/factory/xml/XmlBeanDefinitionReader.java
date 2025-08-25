@@ -8,13 +8,13 @@ import org.dom4j.Element;
 import java.util.ArrayList;
 import java.util.List;
 public class XmlBeanDefinitionReader {
+    /////////////////////
     AbstractBeanFactory bf;
 
     public XmlBeanDefinitionReader(AbstractBeanFactory bf) {
         this.bf = bf;
     }
-    public List<BeanDefinition> loadBeanDefinitions(Resource res) {
-        List<BeanDefinition> nonLazyInitBeans = new ArrayList<>();
+    public void loadBeanDefinitions(Resource res) {
         while (res.hasNext()) {
             Element element = (Element)res.next();
             String beanID=element.attributeValue("id");
@@ -60,9 +60,8 @@ public class XmlBeanDefinitionReader {
             beanDefinition.setDependsOn(refArray);
             //end of handle properties
 
-            this.bf.registerBeanDefinition(beanID,beanDefinition,nonLazyInitBeans);
+            this.bf.registerBeanDefinition(beanID,beanDefinition);
         }
-        return nonLazyInitBeans;
     }
 
 

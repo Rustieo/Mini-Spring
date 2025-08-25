@@ -1,6 +1,8 @@
 package beans;
 
+import beans.factory.BeanFactory;
 import beans.factory.support.AutowireCapableBeanFactory;
+import beans.factory.support.DefaultListableBeanFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -8,7 +10,7 @@ import java.lang.reflect.Field;
 
 @Slf4j
 public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor {
-    private AutowireCapableBeanFactory beanFactory;
+    private DefaultListableBeanFactory beanFactory;
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
         Object result = bean;
@@ -23,7 +25,7 @@ public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor {
                     Object autowiredObj;
                     //先根据类型查找(byType)
                     Class<?> fieldType = field.getType();
-                    String[] beanNames = this.getBeanFactory().getBeanNamesByType(fieldType);
+                    String[] beanNames = this.beanFactory.getBeanNamesByType(fieldType);
                     if(beanNames.length==1){
                         autowiredObj = this.getBeanFactory().getBean(beanNames[0]);
                         log.info("正在按照类型查找,类型:{}, Bean名称:{}",field.getType(),beanNames[0]);
@@ -54,10 +56,13 @@ public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         return null;
     }
+
+
     public AutowireCapableBeanFactory getBeanFactory() {
         return beanFactory;
     }
-    public void setBeanFactory(AutowireCapableBeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = (DefaultListableBeanFactory) beanFactory;
     }
 }

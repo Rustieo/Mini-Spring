@@ -2,9 +2,7 @@ package beans.factory.support;
 
 import beans.factory.config.SingletonBeanRegistry;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
@@ -21,6 +19,7 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
             this.beanNames.add(beanName);
         }
     }
+
     public void registerEarlySingleton(String beanName, Object earlySingletonObject) {
         synchronized (this.earlySingletons) {
             this.earlySingletons.put(beanName, earlySingletonObject);
@@ -32,6 +31,9 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
     }
     public Object getEarlySingleton(String beanName) {
         return this.earlySingletons.get(beanName);
+    }
+    public String[] getDependentBeans(String beanName) {
+        return null;
     }
     public boolean containsSingleton(String beanName) {
         return this.singletons.containsKey(beanName);
