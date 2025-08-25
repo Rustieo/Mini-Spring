@@ -1,5 +1,5 @@
-import beans.BeansException;
-import beans.factory.xml.ClassPathXmlApplicationContext;
+import minis.beans.BeansException;
+import minis.context.ClassPathXmlApplicationContext;
 
 public class Test1 {
     public static void main(String[] args) {

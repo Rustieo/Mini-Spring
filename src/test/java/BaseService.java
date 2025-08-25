@@ -1,4 +1,4 @@
-import beans.Autowired;
+import minis.beans.factory.annotation.Autowired;
 
 public class BaseService {
     @Autowired
