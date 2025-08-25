@@ -202,7 +202,7 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
     public String[] getBeanNamesByType(Class<?> type) {
         return allBeanNamesByType.get(type);
     }
-    public void preInstantiateSingletons(List<BeanDefinition>nonLazyInitBeans){
+    public void preInstantiateSingletons(){
         for (BeanDefinition bd : nonLazyInitBeans) {
             getBean(bd.getId());
         }
