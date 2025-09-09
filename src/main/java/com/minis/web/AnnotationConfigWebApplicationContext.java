@@ -1,6 +1,6 @@
 package com.minis.web;
 
-import com.minis.Utils.BeanUtil;
+import com.minis.utils.BeanUtils;
 import com.minis.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import com.minis.beans.factory.config.BeanDefinition;
 import com.minis.beans.factory.config.ConfigurableListableBeanFactory;
@@ -57,7 +57,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractApplicationCo
     public void loadBeanDefinitions(List<String> controllerNames) {
         for (String controller : controllerNames) {
             //把类名的首字母改为小写，作为bean的id
-            String beanID= BeanUtil.convertClassName(controller);
+            String beanID= BeanUtils.convertClassName(controller);
             String beanClassName=controller;
             BeanDefinition beanDefinition=new BeanDefinition(beanID,beanClassName);
             this.beanFactory.registerBeanDefinition(beanID,beanDefinition);

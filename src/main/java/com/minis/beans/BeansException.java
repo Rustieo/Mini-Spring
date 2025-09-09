@@ -1,6 +1,6 @@
 package com.minis.beans;
 
-public class BeansException extends Exception{
+public class BeansException extends RuntimeException{
     public BeansException(String message){
         super(message);
     }

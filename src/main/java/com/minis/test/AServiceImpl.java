@@ -1,10 +1,15 @@
 package com.minis.test;
 
+import com.minis.beans.BeansException;
+import com.minis.context.ClassPathXmlApplicationContext;
+
 public class AServiceImpl implements AService {
+
     private String name;
     private int level;
     private String property1;
     private String property2;
+
     private BaseService ref1;
 
     public AServiceImpl() {
@@ -17,6 +22,12 @@ public class AServiceImpl implements AService {
     public String methodA(){
         return "methodA";
     }
+
+    @Override
+    public void methodB() {
+        ref1.printBaseService();
+    }
+
     public void sayHello() {
         System.out.println(this.property1 + "," + this.property2);
     }

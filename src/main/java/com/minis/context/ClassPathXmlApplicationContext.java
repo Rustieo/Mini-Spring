@@ -4,9 +4,11 @@ import com.minis.beans.BeansException;
 import com.minis.beans.Resource;
 import com.minis.beans.factory.ClassPathXmlResource;
 import com.minis.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
+import com.minis.beans.factory.config.BeanPostProcessor;
 import com.minis.beans.factory.config.ConfigurableListableBeanFactory;
 import com.minis.beans.factory.support.DefaultListableBeanFactory;
 import com.minis.beans.xml.XmlBeanDefinitionReader;
+import com.minis.utils.BeanUtils;
 
 public class ClassPathXmlApplicationContext extends AbstractApplicationContext {
     //TODO 这里接口的声明感觉有点随便,可以挑个更合适的
@@ -59,11 +61,16 @@ public class ClassPathXmlApplicationContext extends AbstractApplicationContext {
     protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 
     }
+    //XXX 目前这里是手动注入,后续可以考虑自动注入
     @Override
-    public void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory)
-    {
-        this.beanFactory.addBeanPostProcessor(new
-                AutowiredAnnotationBeanPostProcessor());
+    public void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+        Object[] beanPostProcessors = BeanUtils.getBeanObjectsForTypeIncludingAncestors(beanFactory, BeanPostProcessor.class);
+        //XXX:这里的AutowiredAnnotationBeanPostProcessor是手动添加的,后续可以考虑自动添加
+        this.beanFactory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
+        for(Object beanPostProcessor:beanPostProcessors){
+            this.beanFactory.addBeanPostProcessor((BeanPostProcessor) beanPostProcessor);
+        }
+
     }
     public void initApplicationEventPublisher(){
         ApplicationEventPublisher aep = new SimpleApplicationEventPublisher();
@@ -76,12 +83,13 @@ public class ClassPathXmlApplicationContext extends AbstractApplicationContext {
     }
     @Override
     protected void registerListeners() {
-        this.beanFactory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
+
     }
 
     @Override
     protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
         this.beanFactory.preInstantiateSingletons();
+        System.out.println();
     }
 
     @Override

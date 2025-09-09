@@ -3,23 +3,20 @@ package com.minis.beans.factory.support;
 import com.minis.beans.BeansException;
 import com.minis.beans.PropertyValue;
 import com.minis.beans.PropertyValues;
-import com.minis.beans.factory.config.ArgumentValue;
-import com.minis.beans.factory.config.BeanDefinition;
-
 import com.minis.beans.factory.BeanFactory;
-
+import com.minis.beans.factory.FactoryBean;
+import com.minis.beans.factory.config.BeanDefinition;
 import lombok.extern.slf4j.Slf4j;
-import com.minis.beans.factory.config.ArgumentValues;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
-public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory, BeanDefinitionRegistry {
+public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements BeanFactory, BeanDefinitionRegistry {
     private BeanFactory parentBeanFactory;
     //改成了protected
     protected Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
@@ -48,101 +45,30 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
                 singleton = this.createBean(beanDefinition);
                 //新注册这个bean实例
                 this.registerSingleton(beanName, singleton);
-            }
+             }
         }
+        if (singleton instanceof FactoryBean) {
+            /*TODO:这里代理方法的时序调用与Spring存在显著差异,AOP这块太复杂了,
+             * 已知的问题有getObjectForBeanInstance产生早早期代理,然后ostProcessBeforeInstantiation
+             * 产生早期代理,然后ostProcessAfterInstantiation完成最终代理,源码看麻了
+             */
+            return this.getObjectForBeanInstance(singleton, beanName);
+        }
+        if(singleton!=null){
+            System.out.println("当前bean:"+beanName+",是否是代理类:"+Proxy.isProxyClass(singleton.getClass()));
+        }
+
         return singleton;
     }
 
-    private Object createBean(BeanDefinition beanDefinition) {
-        Class<?> clz = null;
-        Object obj = null;
-        try {
-            clz = Class.forName(beanDefinition.getClassName());
-            obj=createEarlyBean(beanDefinition);
-            //把early对象放入缓存
-            registerEarlySingleton(beanDefinition.getId(), obj);
-            // 处理属性
-            populateBean(beanDefinition, clz, obj);
-            // step 1: postProcessBeforeInitialization
-            applyBeanPostProcessorsBeforeInitialization(obj, beanDefinition.getId());
-            // step 2: 调用setter方法
-            if (beanDefinition.getInitMethodName() != null && !beanDefinition.equals("")) {
-                invokeInitMethod(beanDefinition, obj);
-            }
-            // step 3: Autowired注入
-            applyBeanPostProcessorsAfterInitialization(obj,beanDefinition.getId());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (BeansException e) {
-            throw new RuntimeException(e);
-        }
-        return obj;
-    }
-    public Object createEarlyBean(BeanDefinition beanDefinition){
-        Class<?> clz = null;
-        Object obj = null;
-        Constructor<?> con = null;
-        try {
-            clz = Class.forName(beanDefinition.getClassName());
-            // 处理构造器参数
-            ArgumentValues argumentValues = beanDefinition.getConstructorArgumentValues();
-            //如果有参数
-            if (!argumentValues.isEmpty()) {
-                Class<?>[] paramTypes = new Class<?>[argumentValues.getArgumentCount()];
-                Object[] paramValues = new Object[argumentValues.getArgumentCount()];
-                //对每一个参数，分数据类型分别处理
-                for (int i = 0; i < argumentValues.getArgumentCount(); i++) {
-                    ArgumentValue argumentValue = argumentValues.getIndexedArgumentValue(i);
-                    if ("String".equals(argumentValue.getType()) ||
-                            "java.lang.String".equals(argumentValue.getType())) {
-                        paramTypes[i] = String.class;
-                        paramValues[i] = argumentValue.getValue();
-                    } else if ("Integer".equals(argumentValue.getType()) ||
-                            "java.lang.Integer".equals(argumentValue.getType())) {
-                        paramTypes[i] = Integer.class;
-                        paramValues[i] =
-                                Integer.valueOf((String)argumentValue.getValue());
-                    } else if ("int".equals(argumentValue.getType())) {
-                        paramTypes[i] = int.class;
-                        paramValues[i] = Integer.valueOf((String)
-                                argumentValue.getValue());
-                    } else { //默认为string
-                        paramTypes[i] = String.class;
-                        paramValues[i] = argumentValue.getValue();
-                    }
-                }
-                //按照特定构造器创建实例
-                con = clz.getConstructor(paramTypes);
-                obj = con.newInstance(paramValues);
-            } else { //如果没有参数，直接创建实例
-                obj = clz.newInstance();
-            }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        //把bean的class:beanName[]放入缓存
-        if(allBeanNamesByType.containsKey(clz)){
-            allBeanNamesByType.get(clz)[allBeanNamesByType.get(clz).length] = beanDefinition.getId();
-        }else {
-            allBeanNamesByType.put(clz, new String[]{beanDefinition.getId()});
-        }
-        return obj;
-    }
-    private void populateBean(BeanDefinition beanDefinition, Class<?> clz, Object obj){
+    protected abstract Object createBean(BeanDefinition beanDefinition) ;
+
+    protected void populateBean(BeanDefinition beanDefinition, Class<?> clz, Object obj){
         //执行xml注入
         handleProperties(beanDefinition, clz, obj);
     }
     private void handleProperties(BeanDefinition bd, Class<?> clz, Object obj) {
         // 处理属性
-        log.info("handle properties for bean : " + bd.getId());
         PropertyValues propertyValues = bd.getPropertyValues();
         //如果有属性
         if (!propertyValues.isEmpty()) {
@@ -197,33 +123,43 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         }
     }
 
-    private void invokeInitMethod(BeanDefinition beanDefinition, Object obj) {
-        Class<?> clz = beanDefinition.getClass();
-        Method method = null;
-        try {
-            method = clz.getMethod(beanDefinition.getInitMethodName());
-            method.invoke(obj);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
 
-    }
     @Override
     public boolean containsBean(String name) {
         return beanDefinitionMap.containsKey(name);
     }
-    public String[] getBeanNamesByType(Class<?> type) {
+    public String[] getBeanNamesByType(Class<?> type) throws BeansException {
+        //log.info("getBeanNamesByType:{}",type);
+        //检查是否在缓存中
         String[] beanNames = allBeanNamesByType.get(type);
-        if (beanNames == null) {
-            if (parentBeanFactory != null) {
-                return ((AbstractBeanFactory)parentBeanFactory).getBeanNamesByType(type);
+        if(beanNames!=null){
+            return beanNames;
+        }
+        beanNames = doGetBeanNamesByType(type);
+        if(beanNames.length!=0){
+            //把结果加入缓存
+            allBeanNamesByType.put(type, beanNames);
+            return beanNames;
+        }
+        /*TODO:Spring的该方法是不会向父容器查找的,但是resolveDependency会向父容器查找,具体调用链比较复杂
+            日后再完善 */
+        if (parentBeanFactory != null) {
+            return ((AbstractBeanFactory)parentBeanFactory).getBeanNamesByType(type);
+        }else throw new BeansException("对应类型的Bean不存在,类型:"+type);
+    }
+    //扫描所有的Bean,返回对应type(
+    private String[] doGetBeanNamesByType(Class<?> type) {
+        //TODO:完成对FactoryBean的检查
+        //log.info("doGetBeanNamesByType:{}",type);
+        List<String> beanNames = new ArrayList<>();
+        for (String beanName : beanDefinitionMap.keySet()) {
+            BeanDefinition bd = beanDefinitionMap.get(beanName);
+            Class<?> beanClass=bd.getBeanClass();
+            if (beanClass == type||type.isAssignableFrom(beanClass)) {
+                beanNames.add(beanName);
             }
         }
-        return beanNames;
+        return beanNames.toArray(new String[0]);
     }
     public void preInstantiateSingletons(){
         for (BeanDefinition bd : nonLazyInitBeans) {
@@ -279,6 +215,18 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         this.parentBeanFactory = parentBeanFactory;
     }
 
-    abstract public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName) throws BeansException;
-    abstract public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) throws BeansException;
+    protected Object getObjectForBeanInstance(Object beanInstance, String beanName) {
+        // Now we have the bean instance, which may be a normal bean or a FactoryBean.
+        if (!(beanInstance instanceof FactoryBean)) {
+            return beanInstance;
+        }
+
+        Object object = null;
+        FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
+        object = getObjectFromFactoryBean(factory, beanName);
+        return object;
+    }
+
+
+
 }

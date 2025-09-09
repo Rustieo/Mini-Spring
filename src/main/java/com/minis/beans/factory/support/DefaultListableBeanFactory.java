@@ -28,12 +28,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
     public String[] getBeanDefinitionNames() {
         return this.beanNames.toArray(new String[0]);
     }
+    @Override
     public String[] getBeanNamesForType(Class<?> type) {
         List<String> result = new ArrayList<>();
         for (String beanName : this.beanDefinitionNames) {
-            boolean matchFound = false;
+            boolean matchFound;
             BeanDefinition mbd = this.getBeanDefinition(beanName);
-            Class<?> classToMatch = mbd.getClass();
+            Class<?> classToMatch = mbd.getBeanClass();
             if (type.isAssignableFrom(classToMatch)) {
                 matchFound = true;
             }
@@ -44,9 +45,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
                 result.add(beanName);
             }
         }
-        return (String[]) result.toArray();
+        return  result.toArray(new String[0]);
     }
-    @SuppressWarnings("unchecked")
+
     @Override
     public <T> Map<String, T> getBeansOfType(Class<T> type) throws BeansException
     {
@@ -64,7 +65,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
     @Override
     public Object getBean(String beanName) throws BeansException {
         Object result = super.getBean(beanName);
-        if (result == null) {
+        if (result == null&&this.getParentBeanFactory()!=null) {
             result = this.getParentBeanFactory().getBean(beanName);
         }
         return result;

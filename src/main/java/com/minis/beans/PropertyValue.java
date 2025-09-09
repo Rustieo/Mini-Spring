@@ -5,11 +5,19 @@ public class PropertyValue {
     private final Object value;
     private final String type;
     private final boolean isRef;
-    public PropertyValue(String type,String name, Object value, boolean isRef) {
+    public PropertyValue(String type, String name, Object value, boolean isRef) {
+        this.type = type;
         this.name = name;
         this.value = value;
-        this.type = type;
         this.isRef = isRef;
+    }
+
+    public PropertyValue(String type, String name, Object value) {
+        this(type, name, value, false);
+    }
+
+    public PropertyValue(String name, Object value) {
+        this("", name, value, false);
     }
 
     public String getName() {

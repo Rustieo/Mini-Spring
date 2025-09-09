@@ -1,0 +1,43 @@
+package com.minis.aop;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
+
+public class JdkDynamicAopProxy implements AopProxy, InvocationHandler {
+    private static final Logger log = LoggerFactory.getLogger(JdkDynamicAopProxy.class);
+    Object target;
+    private List<PointcutAdvisor> advisors;
+    public JdkDynamicAopProxy(Object target,List<PointcutAdvisor> advisors) {
+        this.target = target;
+        this.advisors =advisors;
+    }
+    @Override
+    public Object getProxy() {
+        Object obj = Proxy.newProxyInstance(JdkDynamicAopProxy.class.getClassLoader(), target.getClass().getInterfaces(), this);
+        return obj;
+    }
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        Class<?> targetClass = (target != null ? target.getClass() : null);
+        List<Advice> interceptors = getChain(method);
+        if (interceptors.isEmpty()) {
+            //log.info("No interceptors found for method: {}", method);
+            return method.invoke(target, args);
+        }
+        ReflectiveMethodInvocation invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, interceptors);
+        return invocation.proceed();
+    }
+    public List<Advice> getChain(Method method) {
+        List<Advice> interceptors = new ArrayList<>();
+        for (Advisor advisor : advisors) {
+            interceptors.add(advisor.getMethodInterceptor());
+        }
+        return interceptors;
+    }
+}

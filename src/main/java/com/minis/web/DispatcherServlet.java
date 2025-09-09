@@ -1,7 +1,7 @@
 package com.minis.web;
 
 import com.minis.beans.BeansException;
-import com.minis.web.Utils.WebApllicationContextUtil;
+import com.minis.web.utils.WebApplicationContextUtil;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -46,7 +46,7 @@ public class DispatcherServlet extends HttpServlet {
             e.printStackTrace();
         }
         this.packageNames = XmlScanComponentHelper.getNodeValue(xmlPath);
-        WebApplicationContext parentApplicationContext= WebApllicationContextUtil.getWebApplicationContext(this.getServletContext(),WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+        WebApplicationContext parentApplicationContext= WebApplicationContextUtil.getWebApplicationContext(this.getServletContext(),WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
         this.webApplicationContext = new AnnotationConfigWebApplicationContext(sContextConfigLocation,parentApplicationContext);
         Refresh();
     }
