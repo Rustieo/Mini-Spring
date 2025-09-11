@@ -1,8 +1,9 @@
 package com.minis.beans.factory.annotation;
 
 import com.minis.beans.BeansException;
+import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.BeanFactory;
-import com.minis.beans.factory.config.BeanPostProcessor;
+import com.minis.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import com.minis.beans.factory.support.DefaultListableBeanFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,7 +11,7 @@ import java.lang.reflect.Field;
 
 
 @Slf4j
-public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor {
+public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor {
     private DefaultListableBeanFactory beanFactory;
 
     //TODO 这里的注入逻辑实际上对应的是 postProcessProperties方法而不是下面这个,有时间的话改改
@@ -57,6 +58,12 @@ public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor {
             }
         }
         return result;
+    }
+    //TODO
+    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+            throws BeansException {
+
+        return null;
     }
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

@@ -1,6 +1,7 @@
 package com.minis.beans.factory;
 
 
+import com.minis.beans.BeansException;
 import com.minis.beans.PropertyValue;
 import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.config.ArgumentValue;
@@ -26,20 +27,7 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     }
 
     //getBean，容器的核心方法
-    public Object getBean(String beanName) {
-        //先尝试直接拿bean实例
-        Object singleton = this.getSingleton(beanName);
-        //如果此时还没有这个bean的实例，则获取它的定义来创建实例
-        if (singleton == null) {
-            singleton= this.getEarlySingleton(beanName);
-            if (singleton == null) {
-                singleton = this.createBean(beanDefinitionMap.get(beanName));
-                //新注册这个bean实例
-                this.registerSingleton(beanName, singleton);
-            }
-        }
-        return singleton;
-    }
+
 
     private Object createBean(BeanDefinition beanDefinition) {
         Class<?> clz = null;
@@ -200,6 +188,12 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     public Class<?> getType(String name) {
         return this.beanDefinitionMap.get(name).getClass();
     }
+
+    @Override
+    public Object getBean(String beanName) throws BeansException {
+        return null;
+    }
+
     public void registerBean(String name, Object obj) {
         this.registerSingleton(name, obj);
     }

@@ -31,36 +31,45 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
     public AbstractBeanFactory() {
 
     }
+    /*普通bean创建逻辑:(AbstractBeanFactory为ab,AutowiredAbstractBeanFactory为aab,DefaultBeanRegistry为dbr
+    * ab:getBean->dbr:getSingleton(查询缓存版)->不在缓存中->ab:getSingleton(传入工厂对象)->调用工厂对象的getObject()
+    * aab:createBean->aab:createBeanInstance调用构造器创建原胚->aab:addSingletonFactory,把工厂对象放入缓存,同时这里工厂的getObject
+    * 绑定的是getEarlyBeanReference方法,注释会讲-> aab:populateBean填充bean的属性.首先完成xml属性注入,然后调用SmartInstantiationAwareBeanPostProcessor,
+    * 调用每个后置处理器的postProcessProperties方法,其中调用完AutowiredAnnotationBeanPostProcessor
+    * 的postProcessProperties后完成Autowired注解注入.而一些后置处理器,比如AOP后置处理器,这个postProcessProperties
+    * 的实现是直接把参数原封不动返回了,即不做任何操作
+    * populateBean注入完属性后,就此完成bean的实例化->aab:initializeBean->调用每个后置处理器的postProcessBeforeInitialization
+    * ->aab:invokeInitMethods(调用初始方法,不是构造方法而是自己定义的初始方法)->调用每个后置处理器的postProcessAfterInitialization*/
 
     //getBean，容器的核心方法
     public Object getBean(String beanName) throws BeansException {
-        //先尝试直接拿bean实例
+        //先尝试从缓存中直接拿bean实例
+        //TODO 在这加上对FactoryBean的识别逻辑
         Object singleton = this.getSingleton(beanName);
         //如果此时还没有这个bean的实例，则获取它的定义来创建实例
         if (singleton == null) {
-            singleton= this.getEarlySingleton(beanName);
-            //加上beanDefinitionMap.containsKey,避免空指针异常(然后交给父工厂处理)
-            if (singleton == null&&beanDefinitionMap.containsKey(beanName)) {
-                BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
-                singleton = this.createBean(beanDefinition);
-                //新注册这个bean实例
-                this.registerSingleton(beanName, singleton);
-             }
+            BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+            if (beanDefinition == null) {
+                if(this.getParentBeanFactory()==null){
+                    throw new BeansException("No bean named '" + beanName + "' is defined");
+                }else return null;
+            }
+            singleton= this.getSingleton(beanName,()->{
+                return this.createBean(beanDefinition);
+            });
         }
         if (singleton instanceof FactoryBean) {
-            /*TODO:这里代理方法的时序调用与Spring存在显著差异,AOP这块太复杂了,
-             * 已知的问题有getObjectForBeanInstance产生早早期代理,然后ostProcessBeforeInstantiation
-             * 产生早期代理,然后ostProcessAfterInstantiation完成最终代理,源码看麻了
-             */
             return this.getObjectForBeanInstance(singleton, beanName);
         }
         if(singleton!=null){
             System.out.println("当前bean:"+beanName+",是否是代理类:"+Proxy.isProxyClass(singleton.getClass()));
         }
-
         return singleton;
     }
-
+    /*TODO:这里代理方法的时序调用与Spring存在显著差异,AOP这块太复杂了,
+     * 已知的问题有getObjectForBeanInstance产生早早期代理,然后ostProcessBeforeInstantiation
+     * 产生早期代理,然后ostProcessAfterInstantiation完成最终代理,源码看麻了
+     */
     protected abstract Object createBean(BeanDefinition beanDefinition) ;
 
     protected void populateBean(BeanDefinition beanDefinition, Class<?> clz, Object obj){
@@ -161,6 +170,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
         }
         return beanNames.toArray(new String[0]);
     }
+    //TODO 可能要加上对FactoryBean的识别逻辑
     public void preInstantiateSingletons(){
         for (BeanDefinition bd : nonLazyInitBeans) {
             try {

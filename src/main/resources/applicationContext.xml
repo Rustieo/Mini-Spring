@@ -4,7 +4,7 @@
 
 
     </bean>
-    <bena id="beforeAdvice" class="com.minis.test.service.MyBeforeAdvice" />
+    <bean id="beforeAdvice" class="com.minis.test.service.MyBeforeAdvice" />
     <bean id="advisor" class="com.minis.aop.NameMatchMethodPointcutAdvisor">
         <property type="com.minis.aop.Advice" name="advice" ref="beforeAdvice"/>
         <property type="String" name="mappedName" value="does*"/>

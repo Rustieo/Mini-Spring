@@ -13,7 +13,8 @@ import java.util.List;
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
 
     private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
-
+    //XXX:这个先不管
+    private boolean allowCircularReferences = true;
     public AbstractAutowireCapableBeanFactory(BeanFactory parentBeanFactory) {
         super(parentBeanFactory);
     }
@@ -23,24 +24,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
     }
     public Object createBean(BeanDefinition beanDefinition) {
         Class<?> clz = null;
-        Object obj = null;
-        Object  exposedObject;
+        //先把bean实例化,生成原胚并放入工厂
+        Object bean = createBeanInstance(beanDefinition);
         try {
             clz = Class.forName(beanDefinition.getClassName());
-            obj=createEarlyBean(beanDefinition);
-            //把early对象放入缓存
-            registerEarlySingleton(beanDefinition.getId(), obj);
-            // 处理属性
-            populateBean(beanDefinition, clz, obj);
-            exposedObject=initializeBean(beanDefinition, obj);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
-        } catch (BeansException e) {
-            throw new RuntimeException(e);
         }
+        addSingletonFactory(beanDefinition.getId(), () -> getEarlyBeanReference(beanDefinition.getId(), bean));
+        //NOTE 关于这里为什么要定义一个exposedObject,首先概念是:exposedObject是最终结果(即res),而我们又用bean保存了原始毛坯
+        //至于为什么这么做,见Spring的AbstractAutowireCapableBeanFactory的632行
+        Object  exposedObject=bean;
+        // 处理属性
+        populateBean(beanDefinition, clz, bean);
+        exposedObject=initializeBean(beanDefinition, bean);
         return exposedObject;
     }
-    public Object createEarlyBean(BeanDefinition beanDefinition){
+    public Object createBeanInstance(BeanDefinition beanDefinition){
         Class<?> clz = null;
         Object obj = null;
         Constructor<?> con = null;
@@ -91,6 +91,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             throw new RuntimeException(e);
         }
         //把bean的class:beanName[]放入缓存
+        //TODO 这里要修改下,不是所有的bean都要放进去,而且我感觉并不是bean实例化后就立即放进去
         if(allBeanNamesByType.containsKey(clz)){
             allBeanNamesByType.get(clz)[allBeanNamesByType.get(clz).length] = beanDefinition.getId();
         }else {
@@ -124,6 +125,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             throw new RuntimeException(e);
         }
 
+    }
+    protected Object getEarlyBeanReference(String beanName,Object bean) {
+        Object exposedObject = bean;
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+                    exposedObject = ((SmartInstantiationAwareBeanPostProcessor)bp).getEarlyBeanReference(exposedObject, beanName);
+                }
+            }
+        return exposedObject;
     }
 
     //TODO 这个方法的逻辑有点混乱,好多类都各自实现了

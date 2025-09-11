@@ -1,19 +1,24 @@
 package com.minis.aop;
 
 import com.minis.beans.BeansException;
+import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.BeanFactory;
-import com.minis.beans.factory.config.BeanPostProcessor;
+import com.minis.beans.factory.FactoryBean;
+import com.minis.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import com.minis.beans.factory.support.DefaultListableBeanFactory;
 import com.minis.utils.AopUtils;
+import com.minis.utils.StringUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Data
-public class ProxyCreator implements BeanPostProcessor {
+public class ProxyCreator implements SmartInstantiationAwareBeanPostProcessor {
     protected static final Object[] DO_NOT_PROXY = null;
     private String pattern;
     //记录的是全局拦截器,不包括特定bean的拦截器
@@ -21,6 +26,8 @@ public class ProxyCreator implements BeanPostProcessor {
     private AopProxyFactory aopProxyFactory;
     DefaultListableBeanFactory beanFactory;
     List<Advisor> advisorsCache;
+    //用于缓存在循环依赖中提前被代理的对象
+    private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
     public ProxyCreator(){
         //TODO 因为目前xml还没定义数组,因此只能先这么搞了(笑)
         this.aopProxyFactory = new DefaultAopProxyFactory();
@@ -30,12 +37,30 @@ public class ProxyCreator implements BeanPostProcessor {
         this.interceptorNames = interceptorNames;
         this.aopProxyFactory = new DefaultAopProxyFactory();
     }
+    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) throws BeansException {
+        return pvs;
+    }
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
         return bean;
     }
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        if (bean != null) {
+            //检查这个bean是否在解决循环依赖时已经被代理过了
+            Object cacheKey = getCacheKey(bean.getClass(), beanName);
+            if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+                return wrapIfNecessary(bean, beanName, cacheKey);
+            }
+        }
+        return bean;
+    }
+
+    public Object wrapIfNecessary(Object bean,String beanName,Object cacheKey){
+        //跳过AOP基础设施类，不进行代理
+        if (isInfrastructureClass(bean.getClass())) {
+            return bean;
+        }
         //获取一个Bean的所有Advisor
         Object[] advisors = getAdvicesAndAdvisorsForBean(beanName,bean.getClass());
         if(advisors==DO_NOT_PROXY){
@@ -43,18 +68,23 @@ public class ProxyCreator implements BeanPostProcessor {
         }
         log.info("AOP匹配成功,Bean名称:{}",beanName);
         //创建代理
-        ProxyFactoryBean proxyFactoryBean = new ProxyFactoryBean();
-        proxyFactoryBean.setTarget(bean);
-        proxyFactoryBean.setBeanFactory(this.beanFactory);
         List<PointcutAdvisor>advisorsList=new ArrayList<>();
         for (Object advisor : advisors) {
             advisorsList.add((PointcutAdvisor) advisor);
         }
+        /*ProxyFactoryBean proxyFactoryBean = new ProxyFactoryBean();
+        proxyFactoryBean.setTarget(bean);
+        proxyFactoryBean.setBeanFactory(this.beanFactory);
         //proxyFactoryBean.setAdvisors(advisorsList);
-        proxyFactoryBean.setAopProxyFactory(this.aopProxyFactory);
-        return proxyFactoryBean;
+        proxyFactoryBean.setAopProxyFactory(this.aopProxyFactory);*/
+        ProxyFactory proxyFactory=new ProxyFactory(bean);
+        proxyFactory.setAdvisors(advisorsList);
+        proxyFactory.setAopProxyFactory(this.aopProxyFactory);
+        return proxyFactory.getProxy();
     }
-    //获取一个Bean的所有Advisor
+
+
+    //获取一个Bean最终要用的Advisor
     private Object[] getAdvicesAndAdvisorsForBean(String beanName,Class<?> beanClass) {
         List<Advisor> advisors = findEligibleAdvisors(beanName,beanClass);
         return advisors.isEmpty() ? DO_NOT_PROXY:advisors.toArray(new Advisor[0]);
@@ -83,7 +113,7 @@ public class ProxyCreator implements BeanPostProcessor {
             if (advisor instanceof PointcutAdvisor) {
                 PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
                 if(pointcutAdvisor instanceof PointcutAdvisor){
-
+                    //TODO 这里为啥莫名其妙空着了
 
                 }
                 //检查切点和该类是否匹配
@@ -95,6 +125,34 @@ public class ProxyCreator implements BeanPostProcessor {
         }
         return eligibleAdvisors;
     }
+
+    @Override
+    public Object getEarlyBeanReference(Object bean, String beanName) {
+        // 跳过AOP基础设施类，避免在收集Advisor时再次走代理导致递归
+        if (isInfrastructureClass(bean.getClass())) {
+            return bean;
+        }
+        Object cacheKey = getCacheKey(bean.getClass(), beanName);
+        this.earlyProxyReferences.put(cacheKey, bean);
+        return wrapIfNecessary(bean, beanName, cacheKey);
+    }
+
+    protected Object getCacheKey(Class<?> beanClass,String beanName) {
+        if (StringUtils.hasLength(beanName)) {
+            return (FactoryBean.class.isAssignableFrom(beanClass) ?
+                    BeanFactory.FACTORY_BEAN_PREFIX + beanName : beanName);
+        }
+        else {
+            return beanClass;
+        }
+    }
+    public boolean isInfrastructureClass(Class<?> beanClass) {
+        boolean retVal = Advice.class.isAssignableFrom(beanClass) ||
+                Pointcut.class.isAssignableFrom(beanClass) ||
+                Advisor.class.isAssignableFrom(beanClass);
+        return retVal;
+    }
+
     @Override
     public void setBeanFactory(BeanFactory beanFactory) {
         this.beanFactory = (DefaultListableBeanFactory) beanFactory;
