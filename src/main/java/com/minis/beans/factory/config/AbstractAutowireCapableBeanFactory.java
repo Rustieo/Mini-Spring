@@ -1,5 +1,7 @@
 package com.minis.beans.factory.config;
 
+import com.minis.beans.PropertyValue;
+import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.BeanFactory;
 import com.minis.beans.factory.support.AbstractBeanFactory;
 import com.minis.beans.BeansException;
@@ -99,6 +101,76 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         }
         return obj;
     }
+    protected void populateBean(BeanDefinition beanDefinition, Class<?> clz, Object obj){
+        //执行xml注入
+        //NOTE Spring中其实没handleProperties这个方法
+        handleProperties(beanDefinition, clz, obj);
+        //执行注解注入
+        for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            if (bp instanceof InstantiationAwareBeanPostProcessor) {
+                try {
+                    ((InstantiationAwareBeanPostProcessor) bp).postProcessProperties(null, obj, beanDefinition.getId());
+                } catch (BeansException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+    private void handleProperties(BeanDefinition bd, Class<?> clz, Object obj) {
+        // 处理属性
+        PropertyValues propertyValues = bd.getPropertyValues();
+        //如果有属性
+        if (!propertyValues.isEmpty()) {
+            for (int i=0; i<propertyValues.size(); i++) {
+                PropertyValue propertyValue = propertyValues.getPropertyValueList().get(i);
+                String pName = propertyValue.getName();
+                String pType = propertyValue.getType();
+                Object pValue = propertyValue.getValue();
+                boolean isRef = propertyValue.isRef();
+                Class<?>[] paramTypes = new Class<?>[1];
+                Object[] paramValues = new Object[1];
+                if (!isRef) { //如果不是ref，只是普通属性
+                    //对每一个属性，分数据类型分别处理
+                    if ("String".equals(pType) || "java.lang.String".equals(pType)) {
+                        paramTypes[0] = String.class;
+                    } else if ("Integer".equals(pType) || "java.lang.Integer".equals(pType)) {
+                        paramTypes[0] = Integer.class;
+                    } else if ("int".equals(pType)) {
+                        paramTypes[0] = int.class;
+                    } else {
+                        paramTypes[0] = String.class;
+                    }
+                    paramValues[0] = pValue;
+                } else { //is ref, create the dependent beans
+                    try {
+                        paramTypes[0] = Class.forName(pType);
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    //再次调用getBean创建ref的bean实例
+                    try {
+                        paramValues[0] = getBean((String) pValue);
+                    } catch (BeansException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                //按照setXxxx规范查找setter方法，调用setter方法设置属性
+                String methodName = "set" + pName.substring(0, 1).toUpperCase() + pName.substring(1);
+                Method method = null;
+                try {
+                    method = clz.getMethod(methodName, paramTypes);
+                    method.invoke(obj, paramValues);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        }
+    }
     public Object initializeBean(BeanDefinition beanDefinition, Object bean){
         Object wrappedBean = bean;
         // step 1: postProcessBeforeInitialization
@@ -140,6 +212,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
     public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
         if(!beanPostProcessors.contains(beanPostProcessor)){
             beanPostProcessors.add(beanPostProcessor);
+            beanPostProcessor.setBeanFactory(this);
         }
     }
     public int getBeanPostProcessorCount() {
@@ -153,8 +226,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         Object current;
         //下面是管道设计模式
         for (BeanPostProcessor beanProcessor : getBeanPostProcessors()) {
-            //TODO:感觉setBeanFactory应该是在注册那里调用的
-            beanProcessor.setBeanFactory(this);
             current = beanProcessor.postProcessBeforeInitialization(result, beanName);
             if (current == null) {
                 return result;

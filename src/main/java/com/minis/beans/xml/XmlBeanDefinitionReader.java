@@ -6,19 +6,18 @@ import com.minis.beans.Resource;
 import com.minis.beans.factory.config.ArgumentValue;
 import com.minis.beans.factory.config.ArgumentValues;
 import com.minis.beans.factory.config.BeanDefinition;
-import com.minis.beans.factory.support.AbstractBeanFactory;
-
-
+import com.minis.beans.factory.support.BeanDefinitionRegistry;
+import com.minis.beans.factory.support.DefaultListableBeanFactory;
 import org.dom4j.Element;
 
 import java.util.ArrayList;
 import java.util.List;
 public class XmlBeanDefinitionReader {
     /////////////////////
-    AbstractBeanFactory bf;
+    BeanDefinitionRegistry br;
 
-    public XmlBeanDefinitionReader(AbstractBeanFactory bf) {
-        this.bf = bf;
+    public XmlBeanDefinitionReader(DefaultListableBeanFactory bf) {
+        this.br = bf;
     }
     public void loadBeanDefinitions(Resource res) {
         while (res.hasNext()) {
@@ -66,10 +65,7 @@ public class XmlBeanDefinitionReader {
             beanDefinition.setDependsOn(refArray);
             //end of handle properties
 
-            this.bf.registerBeanDefinition(beanID,beanDefinition);
+            this.br.registerBeanDefinition(beanID,beanDefinition);
         }
     }
-
-
-
 }

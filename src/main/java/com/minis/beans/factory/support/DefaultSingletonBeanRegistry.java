@@ -73,7 +73,7 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
         }
         return singletonObject;
     }
-    public Object getSingleton(String beanName,ObjectFactory<?>singletonFactory){
+    public Object  getSingleton(String beanName,ObjectFactory<?>singletonFactory){
         synchronized (this.singletons){
             Object singletonObject=this.singletons.get(beanName);
             if(singletonObject==null){

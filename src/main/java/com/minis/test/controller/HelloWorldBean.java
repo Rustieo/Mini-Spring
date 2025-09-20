@@ -14,7 +14,7 @@ public class HelloWorldBean {
 
     @RequestMapping("/testaop")
     public void doTestAop(HttpServletRequest request, HttpServletResponse response) {
-        action.doesAction();
+        action.doAction();
 
         String str = "test aop, hello world!";
         try {

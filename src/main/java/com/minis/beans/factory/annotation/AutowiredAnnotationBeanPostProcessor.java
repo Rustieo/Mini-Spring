@@ -13,10 +13,7 @@ import java.lang.reflect.Field;
 @Slf4j
 public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor {
     private DefaultListableBeanFactory beanFactory;
-
-    //TODO 这里的注入逻辑实际上对应的是 postProcessProperties方法而不是下面这个,有时间的话改改
-    @Override
-    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) throws BeansException {
         Object result = bean;
 
         Class<?> clazz = bean.getClass();
@@ -57,13 +54,8 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
                 }
             }
         }
-        return result;
-    }
-    //TODO
-    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
-            throws BeansException {
-
-        return null;
+        //TODO 这里暂时跟SPring实现逻辑不一样,都没用上pvs
+        return pvs;
     }
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

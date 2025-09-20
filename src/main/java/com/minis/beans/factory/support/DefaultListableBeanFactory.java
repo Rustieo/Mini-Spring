@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements ConfigurableListableBeanFactory {
+public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements ConfigurableListableBeanFactory,BeanDefinitionRegistry {
 
 
     public DefaultListableBeanFactory(BeanFactory parentBeanFactory) {
@@ -58,6 +58,29 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
             result.put(beanName, (T) beanInstance);
         }
         return result;
+    }
+    public void registerBeanDefinition(String name, BeanDefinition beanDefinition) {
+        BeanDefinition existingDefinition = this.beanDefinitionMap.get(name);
+        if (existingDefinition != null) {
+            throw new BeansException("Could not register object [" + beanDefinition +
+                    "] as it is already registered under object name [" + name + "]");
+        }
+        this.beanDefinitionMap.put(name, beanDefinition);
+        this.beanDefinitionNames.add(name);
+        if (!beanDefinition.isLazyInit()) {
+            nonLazyInitBeans.add(beanDefinition);
+        }
+    }
+    public void removeBeanDefinition(String name) {
+        this.beanDefinitionMap.remove(name);
+        this.beanDefinitionNames.remove(name);
+        this.removeSingleton(name);
+    }
+    public BeanDefinition getBeanDefinition(String name) {
+        return this.beanDefinitionMap.get(name);
+    }
+    public boolean containsBeanDefinition(String name) {
+        return this.beanDefinitionMap.containsKey(name);
     }
     public void setParent(BeanFactory beanFactory) {
         this.setParentBeanFactory(beanFactory) ;
