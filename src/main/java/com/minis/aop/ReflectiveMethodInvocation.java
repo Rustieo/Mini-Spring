@@ -55,6 +55,7 @@ public class ReflectiveMethodInvocation implements MethodInvocation{
     public Object proceed() throws Throwable {
         //XXX Spring源码是size-1
         if (this.currentInterceptorIndex == this.interceptors.size()) {
+            //调用原来的方法
             return invokeJoinpoint();
         }
         MethodInterceptor interceptor = (MethodInterceptor) this.interceptors.get(this.currentInterceptorIndex++);

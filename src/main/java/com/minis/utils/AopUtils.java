@@ -10,6 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AopUtils {
+    //从候选的切面中,找出能应用到beanClass的切面
+    public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> beanClass) {
+        List<Advisor> eligibleAdvisors = new ArrayList<>();
+        for (Advisor advisor : candidateAdvisors) {
+            if (advisor instanceof PointcutAdvisor) {
+                PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
+                //检查切点和该类是否匹配
+                if(canApply(pointcutAdvisor,beanClass)){
+                    //匹配成功,说明该类有需要被代理的方法(minis目前只能实现方法的代理)
+                    eligibleAdvisors.add(advisor);
+                }
+            }
+        }
+        return eligibleAdvisors;
+    }
+
     //判断一个切点与一个类是否匹配,如果匹配,说明这个类需要被SpringAop代理
     public static boolean canApply(Pointcut pc, Class<?> targetClass) {
         //先检查类过滤器

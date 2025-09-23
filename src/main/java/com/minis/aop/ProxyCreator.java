@@ -108,22 +108,7 @@ public class ProxyCreator implements SmartInstantiationAwareBeanPostProcessor {
     }
     //判断Advisor是否适用于特定的Bean
     private List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> beanClass) {
-        List<Advisor> eligibleAdvisors = new ArrayList<>();
-        for (Advisor advisor : candidateAdvisors) {
-            if (advisor instanceof PointcutAdvisor) {
-                PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
-                if(pointcutAdvisor instanceof PointcutAdvisor){
-                    //TODO 这里为啥莫名其妙空着了
-
-                }
-                //检查切点和该类是否匹配
-                if(AopUtils.canApply(pointcutAdvisor,beanClass)){
-                    //匹配成功,说明该类有需要被代理的方法(minis目前只能实现方法的代理)
-                    eligibleAdvisors.add(advisor);
-                }
-            }
-        }
-        return eligibleAdvisors;
+        return AopUtils.findAdvisorsThatCanApply(candidateAdvisors,beanClass);
     }
 
     @Override

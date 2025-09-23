@@ -62,10 +62,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
         }
         return singleton;
     }
-    /*TODO:这里代理方法的时序调用与Spring存在显著差异,AOP这块太复杂了,
-     * 已知的问题有getObjectForBeanInstance产生早早期代理,然后ostProcessBeforeInstantiation
-     * 产生早期代理,然后ostProcessAfterInstantiation完成最终代理,源码看麻了
-     */
+
     protected abstract Object createBean(BeanDefinition beanDefinition) ;
 
 
