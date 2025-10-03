@@ -3,14 +3,14 @@ package com.minis.beans.factory.support;
 import com.minis.beans.factory.BeanFactory;
 import com.minis.beans.factory.config.ConfigurableListableBeanFactory;
 import com.minis.beans.BeansException;
-import com.minis.beans.factory.config.AbstractAutowireCapableBeanFactory;
 import com.minis.beans.factory.config.BeanDefinition;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements ConfigurableListableBeanFactory,BeanDefinitionRegistry {
 
 
@@ -30,6 +30,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
     }
     @Override
     public String[] getBeanNamesForType(Class<?> type) {
+
         List<String> result = new ArrayList<>();
         for (String beanName : this.beanDefinitionNames) {
             boolean matchFound;

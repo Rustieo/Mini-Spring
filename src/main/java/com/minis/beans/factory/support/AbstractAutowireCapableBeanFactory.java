@@ -1,10 +1,11 @@
-package com.minis.beans.factory.config;
+package com.minis.beans.factory.support;
 
+import com.minis.beans.BeansException;
 import com.minis.beans.PropertyValue;
 import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.BeanFactory;
-import com.minis.beans.factory.support.AbstractBeanFactory;
-import com.minis.beans.BeansException;
+import com.minis.beans.factory.InitializingBean;
+import com.minis.beans.factory.config.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -177,18 +178,24 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         wrappedBean=applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanDefinition.getId());
         // step 2: 调用setter方法
         if (beanDefinition.getInitMethodName() != null && !beanDefinition.equals("")) {
-            invokeInitMethods(beanDefinition, bean);
+            try{invokeInitMethods(beanDefinition, bean);}
+            catch (Throwable ex) {
+                throw new BeansException("Invocation of init method failed");
+            }
         }
         // step 3: Autowired注入
         wrappedBean=applyBeanPostProcessorsAfterInitialization(wrappedBean,beanDefinition.getId());
         return wrappedBean;
     }
-    private void invokeInitMethods(BeanDefinition beanDefinition, Object obj) {
+    private void invokeInitMethods(BeanDefinition beanDefinition, Object bean) throws Throwable {
+        if(bean instanceof InitializingBean){
+            ((InitializingBean) bean).afterPropertiesSet();
+        }
         Class<?> clz = beanDefinition.getClass();
         Method method = null;
         try {
             method = clz.getMethod(beanDefinition.getInitMethodName());
-            method.invoke(obj);
+            method.invoke(bean);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         } catch (NoSuchMethodException e) {

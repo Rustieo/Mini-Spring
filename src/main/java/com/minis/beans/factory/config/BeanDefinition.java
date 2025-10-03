@@ -1,7 +1,10 @@
 package com.minis.beans.factory.config;
 
 import com.minis.beans.PropertyValues;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 public class BeanDefinition {
     String SCOPE_SINGLETON = "singleton";
     String SCOPE_PROTOTYPE = "prototype";
@@ -80,7 +83,10 @@ public class BeanDefinition {
             try {
                 beanClass = Class.forName(className);
             } catch (ClassNotFoundException e) {
+
                 e.printStackTrace();
+            }catch (Error e){
+                log.error("发现错误,{}",className);
             }
         }
         return beanClass;

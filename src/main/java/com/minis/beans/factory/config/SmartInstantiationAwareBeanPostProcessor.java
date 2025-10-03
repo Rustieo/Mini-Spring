@@ -8,5 +8,4 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
     default Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
         return bean;
     }
-
 }

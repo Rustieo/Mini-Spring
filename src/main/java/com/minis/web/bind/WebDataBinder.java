@@ -1,4 +1,4 @@
-package com.minis.web;
+package com.minis.web.bind;
 
 import com.minis.beans.BeanWrapperImpl;
 import com.minis.beans.PropertyEditor;

@@ -1,6 +1,8 @@
 package com.minis.web;
 
 import com.minis.beans.BeansException;
+import com.minis.beans.factory.annotation.Autowired;
+import com.minis.web.method.support.HandlerMethod;
 import com.minis.web.utils.WebApplicationContextUtil;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -16,6 +18,8 @@ import java.util.*;
 public class DispatcherServlet extends HttpServlet {
     public static final String WEB_APPLICATION_CONTEXT_ATTRIBUTE = DispatcherServlet.class.getName() + ".CONTEXT";
     private HandlerMapping handlerMapping;
+
+    @Autowired
     private HandlerAdapter handlerAdapter;
 
     private WebApplicationContext webApplicationContext;
@@ -48,13 +52,15 @@ public class DispatcherServlet extends HttpServlet {
         this.packageNames = XmlScanComponentHelper.getNodeValue(xmlPath);
         WebApplicationContext parentApplicationContext= WebApplicationContextUtil.getWebApplicationContext(this.getServletContext(),WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
         this.webApplicationContext = new AnnotationConfigWebApplicationContext(sContextConfigLocation,parentApplicationContext);
-        Refresh();
+        refresh();
     }
 
-    protected void Refresh() {
+    protected void refresh() {
         initController();
         initHandlerMappings(this.webApplicationContext);
-        initHandlerAdapters(this.webApplicationContext);
+        //initHandlerAdapters(this.webApplicationContext);
+        //TODO 这块写得有点史
+        this.handlerAdapter= (RequestMappingHandlerAdapter) webApplicationContext.getBean("requestMappingHandlerAdapter");
     }
 
     //完成对controllerClasses,controllerNames,controllerObjs的初始化
@@ -77,10 +83,8 @@ public class DispatcherServlet extends HttpServlet {
     protected void initHandlerMappings(WebApplicationContext wac) {
         this.handlerMapping = new RequestMappingHandlerMapping(wac);
     }
-    protected void initHandlerAdapters(WebApplicationContext wac) {
-        this.handlerAdapter = new RequestMappingHandlerAdapter(wac);
-    }
 
+    @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) {
         request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.webApplicationContext);
         try {
@@ -91,6 +95,7 @@ public class DispatcherServlet extends HttpServlet {
         finally {
         }
     }
+
     protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception{
         HttpServletRequest processedRequest = request;
         HandlerMethod handlerMethod = null;

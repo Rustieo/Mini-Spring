@@ -1,5 +1,6 @@
 package com.minis.web;
 
+import com.minis.web.bind.WebDataBinder;
 import jakarta.servlet.http.HttpServletRequest;
 
 public class WebDataBinderFactory {

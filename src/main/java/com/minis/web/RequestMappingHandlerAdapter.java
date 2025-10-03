@@ -1,25 +1,15 @@
 package com.minis.web;
 
-import com.minis.beans.BeansException;
+import com.minis.beans.factory.annotation.Autowired;
+import com.minis.web.method.support.HandlerMethod;
+import com.minis.web.method.support.HandlerMethodReturnValueHandlerComposite;
+import com.minis.web.method.support.ServletInvocableHandlerMethod;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-
 public class RequestMappingHandlerAdapter implements HandlerAdapter {
-    WebApplicationContext wac = null;
-    private WebBindingInitializer webBindingInitializer = null;
-
-    public RequestMappingHandlerAdapter(WebApplicationContext wac) {
-        this.wac = wac;
-        try {
-            this.webBindingInitializer = (WebBindingInitializer) this.wac.getBean("webBindingInitializer");
-        } catch (BeansException e) {
-            e.printStackTrace();
-        }
-
-    }
+    @Autowired
+    private HandlerMethodReturnValueHandlerComposite returnValueHandlers;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -36,43 +26,18 @@ public class RequestMappingHandlerAdapter implements HandlerAdapter {
     }
 
     protected void invokeHandlerMethod(HttpServletRequest request, HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
-        WebDataBinderFactory binderFactory = new WebDataBinderFactory();
-        Parameter[] methodParameters = handlerMethod.getMethod().getParameters();
-        Object[] methodParamObjs = new Object[methodParameters.length];
-        int i = 0;
-        for (Parameter methodParameter : methodParameters) {
-            if (methodParameter.getType()==HttpServletRequest.class) {
-                methodParamObjs[i] = request;
-            }
-            else if (methodParameter.getType()==HttpServletResponse.class) {
-                methodParamObjs[i] = response;
-            }
-            else if (methodParameter.getType()!=HttpServletRequest.class && methodParameter.getType()!=HttpServletResponse.class) {
-                Object methodParamObj = methodParameter.getType().newInstance();
-                WebDataBinder wdb = binderFactory.createBinder(request, methodParamObj, methodParameter.getName());
-                webBindingInitializer.initBinder(wdb);
-                wdb.bind(request);
-                methodParamObjs[i] = methodParamObj;
-            }
-            i++;
+        ServletInvocableHandlerMethod invocableMethod=new ServletInvocableHandlerMethod(handlerMethod);
+        if(invocableMethod.getReturnValueHandlers()==null){
+            invocableMethod.setReturnValueHandlers(this.returnValueHandlers);
         }
-
-        Method invocableMethod = handlerMethod.getMethod();
-        Object returnobj = invocableMethod.invoke(handlerMethod.getBean(), methodParamObjs);
-        if(returnobj!=null){
-            response.getWriter().append(returnobj.toString());
-        }else {
-            response.getWriter().append("");
+        // 确保下游能够取得 HttpServletResponse
+        if (request.getAttribute("HTTP_RESPONSE") == null) {
+            request.setAttribute("HTTP_RESPONSE", response);
         }
+        //TODO 不知道为什么源代码这里也没传入参数,改天看下
+        invocableMethod.invokeAndHandle(request);
     }
 
-    public WebBindingInitializer getWebBindingInitializer() {
-        return webBindingInitializer;
-    }
-
-    public void setWebBindingInitializer(WebBindingInitializer webBindingInitializer) {
-        this.webBindingInitializer = webBindingInitializer;
-    }
 
 
 }
