@@ -177,12 +177,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         // step 1: postProcessBeforeInitialization
         wrappedBean=applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanDefinition.getId());
         // step 2: 调用setter方法
-        if (beanDefinition.getInitMethodName() != null && !beanDefinition.equals("")) {
-            try{invokeInitMethods(beanDefinition, bean);}
-            catch (Throwable ex) {
-                throw new BeansException("Invocation of init method failed");
-            }
+        try{invokeInitMethods(beanDefinition, wrappedBean);}
+        catch (Throwable ex) {
+            throw new BeansException("Invocation of init method failed");
         }
+
         // step 3: Autowired注入
         wrappedBean=applyBeanPostProcessorsAfterInitialization(wrappedBean,beanDefinition.getId());
         return wrappedBean;
@@ -191,19 +190,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         if(bean instanceof InitializingBean){
             ((InitializingBean) bean).afterPropertiesSet();
         }
-        Class<?> clz = beanDefinition.getClass();
-        Method method = null;
-        try {
-            method = clz.getMethod(beanDefinition.getInitMethodName());
-            method.invoke(bean);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+        if (beanDefinition.getInitMethodName() != null && !beanDefinition.equals("")) {
+            Class<?> clz = beanDefinition.getClass();
+            Method method = null;
+            try {
+                method = clz.getMethod(beanDefinition.getInitMethodName());
+                method.invoke(bean);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
-
     }
     protected Object getEarlyBeanReference(String beanName,Object bean) {
         Object exposedObject = bean;

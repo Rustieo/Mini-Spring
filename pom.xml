@@ -17,9 +17,9 @@
             <version>1.6.1</version>
         </dependency>
         <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
-            <version>12.6.1.jre11</version> <!-- 请根据你的Java版本和需求选择合适的版本 -->
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version> <!-- 请根据需要选择版本 -->
         </dependency>
         <dependency>
             <groupId>junit</groupId>

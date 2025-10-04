@@ -10,6 +10,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 public class SingleConnectionDataSource implements DataSource {
+
     private String driverClassName;
     private String url;
     private String username;
