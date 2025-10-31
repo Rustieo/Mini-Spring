@@ -1,10 +1,13 @@
 package com.minis.aop;
 
+import com.minis.beans.factory.annotation.Autowired;
+
 public class NameMatchMethodPointcutAdvisor implements PointcutAdvisor{
     private Advice advice = null;
     private MethodInterceptor methodInterceptor;
-    private String mappedName;
-    private final NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+    //private String mappedName;
+    @Autowired
+    private  NameMatchMethodPointcut pointcut ;
 
     public NameMatchMethodPointcutAdvisor() {
     }
@@ -50,8 +53,8 @@ public class NameMatchMethodPointcutAdvisor implements PointcutAdvisor{
         return pointcut;
     }
 
-    public void setMappedName(String mappedName) {
+    /*public void setMappedName(String mappedName) {
         this.mappedName = mappedName;
         this.pointcut.setMappedName(this.mappedName);
-    }
+    }*/
 }

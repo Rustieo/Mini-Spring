@@ -17,8 +17,8 @@ public class HelloWorldBean {
     UserService userService;
 
     @RequestMapping("/testaop")
-    public String doTestAop() {
-        action.doAction();
+    public String testAop() {
+        action.doesAction();
         return  "test aop, hello world!";
 
     }

@@ -4,10 +4,13 @@
     </bean>
 
     <bean id="beforeAdvice" class="com.minis.test.service.MyBeforeAdvice" />
+    <!-- 定义Pointcut -->
+    <bean id="pointCut1" class="com.minis.aop.NameMatchMethodPointcut">
+        <property type="String" name="mappedName" value="does*"/>
+    </bean>
 
     <bean id="advisor" class="com.minis.aop.NameMatchMethodPointcutAdvisor">
         <property type="com.minis.aop.Advice" name="advice" ref="beforeAdvice"/>
-        <property type="String" name="mappedName" value="does*"/>
     </bean>
 
     <bean id="myInterceptor" class="com.minis.test.service.TracingInterceptor" />
@@ -28,14 +31,13 @@
     <bean id="baseService" class="com.minis.test.BaseService">
     </bean>
 
-    <!-- 使用 MySQL 的连接池数据源（修正包名为 com.minis.jdbc.pool） -->
-    <bean id="dataSource" class="com.minis.jdbc.pool.PooledDataSource">
+    <!-- 使用 Druid 连接池数据源（适配器封装，便于本框架属性绑定） -->
+    <bean id="dataSource" class="com.minis.jdbc.pool.DruidDataSourceWrapper">
         <property type="String" name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
         <property type="String" name="url" value="jdbc:mysql://localhost:3306/demo?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8"/>
         <property type="String" name="username" value="root"/>
         <property type="String" name="password" value="pxl123"/>
-        <!-- 可选：初始化连接数 -->
-        <!-- <property type="int" name="initialSize" value="2"/> -->
+        <property type="int" name="initialSize" value="2"/>
     </bean>
 
     <bean id="webBindingInitializer" class="com.minis.test.DateInitializer">

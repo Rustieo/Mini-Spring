@@ -24,7 +24,7 @@ public class RequestMappingHandlerAdapter implements HandlerAdapter {
         }
 
     }
-
+    //1 3 2 4 5
     protected void invokeHandlerMethod(HttpServletRequest request, HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
         ServletInvocableHandlerMethod invocableMethod=new ServletInvocableHandlerMethod(handlerMethod);
         if(invocableMethod.getReturnValueHandlers()==null){

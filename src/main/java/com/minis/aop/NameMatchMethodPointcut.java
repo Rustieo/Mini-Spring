@@ -5,7 +5,7 @@ import com.minis.utils.PatternMatchUtils;
 import java.lang.reflect.Method;
 
 public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut implements MethodMatcher, Pointcut{
-    private String mappedName = "";
+    private String mappedName ;
     public void setMappedName(String mappedName) {
         this.mappedName = mappedName;
     }

@@ -10,7 +10,7 @@ public class MappingRegistry {
     //储存被映射的URL
     //注:这里的URL不包含localhost:8080
     private List<String>        urlMappingNames = new ArrayList<>();
-    //储存URL:对象
+    //储存URL:对象(Controller)
     private Map<String,Object>  mappingObjs = new HashMap<>();
     //储存URL:方法,然后配合上面的实现method.invoke(obj)
     private Map<String,Method>  mappingMethods = new HashMap<>();

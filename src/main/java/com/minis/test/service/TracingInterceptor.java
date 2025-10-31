@@ -3,6 +3,7 @@ package com.minis.test.service;
 import com.minis.aop.MethodInterceptor;
 import com.minis.aop.MethodInvocation;
 
+//环绕拦截器
 public class TracingInterceptor implements MethodInterceptor {
     @Override
     public Object invoke(MethodInvocation i) throws Throwable {

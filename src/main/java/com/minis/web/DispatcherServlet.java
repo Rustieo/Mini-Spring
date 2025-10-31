@@ -64,6 +64,7 @@ public class DispatcherServlet extends HttpServlet {
     }
 
     //完成对controllerClasses,controllerNames,controllerObjs的初始化
+    //1 4
     protected void initController() {
         this.controllerNames= Arrays.asList(this.webApplicationContext.getBeanDefinitionNames());
         for(String controllerName : this.controllerNames){
@@ -84,8 +85,10 @@ public class DispatcherServlet extends HttpServlet {
         this.handlerMapping = new RequestMappingHandlerMapping(wac);
     }
 
+    //NOTE HTTP 请求到达 Servlet 的核心入口点
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) {
+        //让请求链都能用到上下文
         request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.webApplicationContext);
         try {
             doDispatch(request, response);
@@ -106,8 +109,8 @@ public class DispatcherServlet extends HttpServlet {
         HandlerAdapter ha = this.handlerAdapter;
         ha.handle(processedRequest, response, handlerMethod);
     }
-
+    //TODO
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        doGet(request, response);
+        super.doPost(request, response);
     }
 }

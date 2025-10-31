@@ -6,6 +6,7 @@ import com.minis.beans.PropertyValues;
 import com.minis.beans.factory.BeanFactory;
 import com.minis.beans.factory.InitializingBean;
 import com.minis.beans.factory.config.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -13,8 +14,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
-
     private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
     //XXX:这个先不管
     private boolean allowCircularReferences = true;
@@ -34,13 +35,30 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+        boolean earlySingletonExposure = (beanDefinition.isSingleton() && this.allowCircularReferences);
         addSingletonFactory(beanDefinition.getId(), () -> getEarlyBeanReference(beanDefinition.getId(), bean));
         //NOTE 关于这里为什么要定义一个exposedObject,首先概念是:exposedObject是最终结果(即res),而我们又用bean保存了原始毛坯
         //至于为什么这么做,见Spring的AbstractAutowireCapableBeanFactory的632行
         Object  exposedObject=bean;
         // 处理属性
         populateBean(beanDefinition, clz, bean);
+        //如果发生了循环依赖并且有AOP,那么这里的exposedObject应为未被代理的原始对象
         exposedObject=initializeBean(beanDefinition, bean);
+        if(earlySingletonExposure){
+            Object earlySingletonReference=getSingleton(beanDefinition.getId());
+            if(earlySingletonReference!=null){//说明发生循环依赖
+                if(exposedObject==bean){
+                    exposedObject=earlySingletonReference;//把代理对象赋值给exposedObject
+                }else {
+                    throw new BeansException(
+                            "Bean with name '" + beanDefinition.getId() + "' has been injected into other beans "+
+                                    "in its raw version as part of a circular reference, but has eventually been " +
+                                    "wrapped. This means that said other beans do not use the final version of the " +
+                                    "bean. This is often the result of over-eager type matching - consider using " +
+                                    "'getBeanNamesForType' with the 'allowEagerInit' flag turned off, for example.");
+                }
+            }
+        }
         return exposedObject;
     }
     public Object createBeanInstance(BeanDefinition beanDefinition){
@@ -137,6 +155,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                     } else if ("Integer".equals(pType) || "java.lang.Integer".equals(pType)) {
                         paramTypes[0] = Integer.class;
                     } else if ("int".equals(pType)) {
+                        //TODO 这里好像有问题
                         paramTypes[0] = int.class;
                     } else {
                         paramTypes[0] = String.class;
@@ -162,10 +181,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                     method = clz.getMethod(methodName, paramTypes);
                     method.invoke(obj, paramValues);
                 } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                    log.error("set方法不存在,{}", methodName);
                 } catch (InvocationTargetException e) {
                     throw new RuntimeException(e);
                 } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }catch (IllegalArgumentException e){
+                    log.error(methodName);
                     throw new RuntimeException(e);
                 }
 
@@ -177,7 +199,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         // step 1: postProcessBeforeInitialization
         wrappedBean=applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanDefinition.getId());
         // step 2: 调用setter方法
-        try{invokeInitMethods(beanDefinition, wrappedBean);}
+        try{
+            invokeInitMethods(beanDefinition, wrappedBean);
+        }
         catch (Throwable ex) {
             throw new BeansException("Invocation of init method failed");
         }

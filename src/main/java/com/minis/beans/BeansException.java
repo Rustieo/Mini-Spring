@@ -5,4 +5,5 @@ public class BeansException extends RuntimeException{
         super(message);
     }
     public BeansException(){}
+
 }
