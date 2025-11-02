@@ -51,10 +51,13 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
     }
 
     public Object getSingleton(String beanName) {
+        return getSingleton(beanName,true);
+    }
+    public Object getSingleton(String beanName,boolean allowEarlyReference) {
         Object singletonObject=this.singletons.get(beanName);
         if(singletonObject==null){
             singletonObject=this.earlySingletons.get(beanName);
-            if(singletonObject==null){
+            if(singletonObject==null&&allowEarlyReference){
                 synchronized (this.singletons){
                     singletonObject=this.singletons.get(beanName);
                     if(singletonObject==null){

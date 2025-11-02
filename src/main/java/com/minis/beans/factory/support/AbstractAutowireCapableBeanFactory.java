@@ -45,7 +45,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         //如果发生了循环依赖并且有AOP,那么这里的exposedObject应为未被代理的原始对象
         exposedObject=initializeBean(beanDefinition, bean);
         if(earlySingletonExposure){
-            Object earlySingletonReference=getSingleton(beanDefinition.getId());
+            //只能从一级和二级缓存中拿
+            Object earlySingletonReference=getSingleton(beanDefinition.getId(),false);
             if(earlySingletonReference!=null){//说明发生循环依赖
                 if(exposedObject==bean){
                     exposedObject=earlySingletonReference;//把代理对象赋值给exposedObject

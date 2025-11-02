@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mapper namespace="com.minis.test.mapper.UserMapper">
     <select id="getUserInfo" parameterType="java.lang.Integer" resultType="com.minis.test.entity.User">
-        select id, name, birthday
+        select *
         from users
         where id=?
     </select>

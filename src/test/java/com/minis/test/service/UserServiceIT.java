@@ -15,7 +15,7 @@ public class UserServiceIT {
         UserService userService = (UserService) ctx.getBean("userService");
         User u = userService.getUserById(1);
         assertNotNull(u);
-        System.out.println(u.getId() + ", " + u.getName() + ", " + u.getBirthday());
+        //System.out.println(u.getId() + ", " + u.getName() + ", " + u.getBirthday());
     }
 }
 

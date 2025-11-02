@@ -7,6 +7,6 @@ import java.util.Date;
 @Data
 public class User {
 	int id ;
+	int age;
 	Date birthday ;
-	String name ;
 }

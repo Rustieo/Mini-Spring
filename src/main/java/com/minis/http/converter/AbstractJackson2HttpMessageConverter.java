@@ -7,6 +7,7 @@ import com.minis.http.MediaType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 
 /**
  * 基于Jackson 2.x的抽象HTTP消息转换器
@@ -71,7 +72,9 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractHttpM
 
             // 允许子类在写入数据之前进行前缀处理
             writePrefix(generator, object);
-
+            //NOTE 不加下面两行代码的话,ObjectMapper就会默认输出Date的fasttime而不是可读的时间
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            objectMapper.setDateFormat(df);
             this.objectMapper.writeValue(generator, object);
 
             // 允许子类在写入数据之后进行后缀处理
