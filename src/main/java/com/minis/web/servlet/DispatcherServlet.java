@@ -1,7 +1,8 @@
-package com.minis.web;
+package com.minis.web.servlet;
 
 import com.minis.beans.BeansException;
 import com.minis.beans.factory.annotation.Autowired;
+import com.minis.web.*;
 import com.minis.web.method.support.HandlerMethod;
 import com.minis.web.utils.WebApplicationContextUtil;
 import jakarta.servlet.ServletConfig;
@@ -95,8 +96,6 @@ public class DispatcherServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        finally {
-        }
     }
 
     protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception{
@@ -104,7 +103,18 @@ public class DispatcherServlet extends HttpServlet {
         HandlerMethod handlerMethod = null;
         handlerMethod = this.handlerMapping.getHandler(processedRequest);
         if (handlerMethod == null) {
-            return;
+            //NOTE 这里的逻辑很关键
+            //没有找到对应的 Controller，我们假设这是一个静态资源请求
+            //将请求转发给 Tomcat 的默认 Servlet（它的名字就叫 "default"）
+            try {
+                //"default" 是大多数 Servlet 容器（如 Tomcat）中用于处理静态资源的内置 Servlet 的标准名称
+                getServletContext().getNamedDispatcher("default").forward(request, response);
+            } catch (Exception e) {
+                //如果转发失败（例如，没有 "default" servlet 或其他配置问题）
+                //至少返回一个 404 错误，而不是空白页
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "No handler found and default servlet could not handle request");
+            }
+            return; // 转发后必须返回
         }
         HandlerAdapter ha = this.handlerAdapter;
         ha.handle(processedRequest, response, handlerMethod);

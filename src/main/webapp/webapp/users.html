@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Users 分页 Demo</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial;margin:20px}
+    table{border-collapse:collapse;width:520px}
+    th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}
+    .pager{margin-top:10px}
+    input{width:60px}
+  </style>
+</head>
+<body>
+  <h2>Users 分页 Demo</h2>
+  <div>
+    <label>页码: <input id="page" type="number" value="1" min="1"/></label>
+    <label>每页: <input id="size" type="number" value="5" min="1"/></label>
+    <button onclick="load()">查询</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Age</th><th>Birthday</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="pager">
+    <span id="info"></span>
+    <button onclick="prev()">上一页</button>
+    <button onclick="next()">下一页</button>
+  </div>
+  <script>
+    function ctx(){
+      var parts = location.pathname.split('/');
+      return parts.length>1?('/'+parts[1]):'';
+    }
+    async function load(){
+      const p = parseInt(document.getElementById('page').value)||1;
+      const s = parseInt(document.getElementById('size').value)||5;
+      const url = ctx()+`/users/page?page=${p}&size=${s}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const tb = document.getElementById('tbody');
+      tb.innerHTML = '';
+      (data.list||[]).forEach(u=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${u.id}</td><td>${u.age}</td><td>${u.birthday?new Date(u.birthday).toLocaleDateString():''}</td>`;
+        tb.appendChild(tr);
+      });
+      document.getElementById('info').textContent = `第 ${data.page}/${data.pages} 页，共 ${data.total} 条`;
+    }
+    function prev(){ const p = Math.max(1,(parseInt(document.getElementById('page').value)||1)-1); document.getElementById('page').value=p; load(); }
+    function next(){ const p = (parseInt(document.getElementById('page').value)||1)+1; document.getElementById('page').value=p; load(); }
+    load();
+  </script>
+</body>
+</html>

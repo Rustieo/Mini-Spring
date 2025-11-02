@@ -2,7 +2,7 @@ package com.minis.test.controller;
 
 import com.minis.beans.factory.annotation.Autowired;
 import com.minis.test.AServiceImpl;
-import com.minis.web.DispatcherServlet;
+import com.minis.web.servlet.DispatcherServlet;
 import com.minis.web.bind.annotation.RequestMapping;
 
 public class ServletTest {

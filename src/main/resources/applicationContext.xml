@@ -55,6 +55,7 @@
 
     <bean id="userService" class="com.minis.test.service.UserService">
         <property type="com.minis.batis.SqlSessionFactory" name="sqlSessionFactory" ref="sqlSessionFactory"/>
+        <property type="com.minis.jdbc.core.JdbcTemplate" name="jdbcTemplate" ref="jdbcTemplate"/>
     </bean>
 
     <bean id="mappingJackson2HttpMessageConverter" class="com.minis.http.converter.MappingJackson2HttpMessageConverter" />

@@ -5,4 +5,16 @@
         from users
         where id=?
     </select>
+    <!-- Pagination query: order by id, limit and offset provided as parameters: size, offset -->
+    <select id="listPage" resultType="com.minis.test.entity.User">
+        select id, age, birthday
+        from users
+        order by id
+        limit ? offset ?
+    </select>
+    <!-- Total count for users table -->
+    <select id="countAll" resultType="java.lang.Integer">
+        select count(*) as cnt
+        from users
+    </select>
 </mapper>

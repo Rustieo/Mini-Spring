@@ -74,7 +74,7 @@
                 <version>3.4.0</version>
                 <configuration>
                     <!-- 当前项目静态与WEB-INF资源目录 -->
-                    <warSourceDirectory>src/main/WebContent</warSourceDirectory>
+                    <warSourceDirectory>src/main/webapp</warSourceDirectory>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
